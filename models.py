@@ -24,3 +24,22 @@ class GeneticoResponse(BaseModel):
     generaciones_ejecutadas: int
     convergencia: bool
     historial_fitness_max: List[int]
+
+
+# =========================================
+# K-MEANS
+# ==========================================
+
+class ClusterRequest(BaseModel):
+    k_clusters: int = Field(ge=2, le=10)
+    max_iteraciones: int = Field(gt=5, le=500)
+    datos: List[List[float]]
+
+
+class ClusterResponse(BaseModel):
+    estado: Literal["exitoso"]
+    k_utilizado: int
+    num_muestras: int
+    centroides_finales: List[List[float]]
+    etiquetas_asignadas: List[int]
+    inercia_wcss: float

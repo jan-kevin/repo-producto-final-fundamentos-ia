@@ -2,9 +2,11 @@
 from fastapi import FastAPI
 from models import (
     GeneticoRequest,
-    GeneticoResponse
+    GeneticoResponse,
+    ClusterRequest,
+    ClusterResponse
 )
-from services import ejecutar_algoritmo_genetico
+from services import ejecutar_algoritmo_genetico, ejecutar_kmeans
 
 app = FastAPI(
     title="API RESTful de Fundamentos de Inteligencia Artificial",
@@ -30,4 +32,14 @@ def genetic_algorithm(parametro: GeneticoRequest):
         max_generaciones=parametro.max_generaciones,
         prob_cruce=parametro.prob_cruce,
         prob_mutacion=parametro.prob_mutacion
+    )
+
+
+# K-MEANS
+@app.post("/cluster", response_model=ClusterResponse)
+def cluster_algoritmo(parametro: ClusterRequest):
+    return ejecutar_kmeans(
+        k_clusters=parametro.k_clusters,
+        max_iteraciones=parametro.max_iteraciones,
+        datos=parametro.datos
     )
