@@ -4,11 +4,12 @@ from models import (
     GeneticoRequest,
     GeneticoResponse,
     ArbolDecisionRequest,
-    ArbolDecisionResponse
+    ArbolDecisionResponse,
     GeneticoResponse,
     ClusterRequest,
     ClusterResponse
 )
+
 from services import ejecutar_algoritmo_genetico, evaluar_riesgo_cardiaco
 from services import ejecutar_algoritmo_genetico, ejecutar_kmeans
 
