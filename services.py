@@ -6,6 +6,136 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.cluster import KMeans
+import numpy as np
+from fastapi import HTTPException
+
+# ===============================================================
+#K-MEANS
+# ===============================================================
+
+SEED_KMEANS = 20
+
+
+def inicializacion_centroides(X, K):
+    """Selecciona K puntos aleatorios como centroides iniciales."""
+    indices_aleatorios = np.random.choice(
+        X.shape[0], K, replace=False
+    )
+    centroides = X[indices_aleatorios].copy()
+    return centroides
+
+
+def asignar_cluster(X, centroides):
+    """Asigna cada punto al centroide mas cercano."""
+    distancias = np.linalg.norm(
+        X[:, np.newaxis, :] - centroides[np.newaxis, :, :],
+        axis=2
+    )
+    indices_cluster = np.argmin(distancias, axis=1)
+    return indices_cluster
+
+
+def recalcular_centroides(X, etiquetas, K):
+    """Calcula nuevamente los centroides de cada cluster."""
+    N, D = X.shape
+    nuevos_centroides = np.zeros((K, D))
+
+    for k in range(K):
+        puntos_cluster = X[etiquetas == k]
+
+        if len(puntos_cluster) > 0:
+            nuevos_centroides[k] = np.mean(
+                puntos_cluster, axis=0
+            )
+        else:
+            nuevos_centroides[k] = X[
+                np.random.choice(N)
+            ]
+
+    return nuevos_centroides
+
+
+def calcular_inercia(X, centroides, etiquetas):
+    """Calcula la inercia WCSS."""
+    inercia = 0
+
+    for k in range(len(centroides)):
+        puntos_cluster = X[etiquetas == k]
+
+        if len(puntos_cluster) > 0:
+            inercia += np.sum(
+                (puntos_cluster - centroides[k]) ** 2
+            )
+
+    return float(inercia)
+
+
+def ejecutar_kmeans(k_clusters, max_iteraciones, datos):
+    """Ejecuta el algoritmo K-Means y devuelve sus resultados."""
+
+    X = np.asarray(datos, dtype=float)
+
+    # Validaciones de los datos
+    if X.ndim != 2 or X.shape[0] < k_clusters:
+        raise HTTPException(
+            status_code=400,
+            detail="Se necesitan al menos K muestras para formar los clusters."
+        )
+
+    if X.shape[1] == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cada muestra debe contener al menos una característica."
+        )
+
+    if not np.isfinite(X).all():
+        raise HTTPException(
+            status_code=400,
+            detail="Los datos deben contener únicamente valores numéricos finitos."
+        )
+
+    # Inicialización reproducible
+    generador = np.random.default_rng(SEED_KMEANS)
+    indices = generador.choice(
+        X.shape[0], k_clusters, replace=False
+    )
+    centroides = X[indices].copy()
+
+    # Iteraciones del algoritmo
+    for iteracion in range(max_iteraciones):
+
+        etiquetas = asignar_cluster(X, centroides)
+
+        nuevos_centroides = recalcular_centroides(
+            X, etiquetas, k_clusters
+        )
+
+        desplazamiento = np.linalg.norm(
+            nuevos_centroides - centroides
+        )
+
+        centroides = nuevos_centroides
+
+        if desplazamiento <= 1e-4:
+            break
+
+    # Asignación final usando los centroides definitivos
+    etiquetas = asignar_cluster(X, centroides)
+
+    # Cálculo de la inercia
+    inercia = calcular_inercia(
+        X, centroides, etiquetas
+    )
+
+    return {
+        "estado": "exitoso",
+        "k_utilizado": k_clusters,
+        "num_muestras": int(X.shape[0]),
+        "centroides_finales": centroides.tolist(),
+        "etiquetas_asignadas": etiquetas.tolist(),
+        "inercia_wcss": inercia
+    }
 
 # ===============================================================
 # ALGORITMO GENETICO:

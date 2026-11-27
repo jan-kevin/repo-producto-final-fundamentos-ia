@@ -4,9 +4,14 @@ from models import (
     GeneticoRequest,
     GeneticoResponse,
     ArbolDecisionRequest,
-    ArbolDecisionResponse
+    ArbolDecisionResponse,
+    GeneticoResponse,
+    ClusterRequest,
+    ClusterResponse
 )
+
 from services import ejecutar_algoritmo_genetico, evaluar_riesgo_cardiaco
+from services import ejecutar_algoritmo_genetico, ejecutar_kmeans
 
 app = FastAPI(
     title="API RESTful de Fundamentos de Inteligencia Artificial",
@@ -45,4 +50,14 @@ def decision_tree_algoritmo(parametro: ArbolDecisionRequest):
         colesterol=parametro.colesterol,
         frecuencia_max=parametro.frecuencia_max,
         angina_ejercicio=parametro.angina_ejercicio
+    )
+
+
+# K-MEANS
+@app.post("/cluster", response_model=ClusterResponse)
+def cluster_algoritmo(parametro: ClusterRequest):
+    return ejecutar_kmeans(
+        k_clusters=parametro.k_clusters,
+        max_iteraciones=parametro.max_iteraciones,
+        datos=parametro.datos
     )

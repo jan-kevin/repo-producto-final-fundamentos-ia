@@ -52,3 +52,22 @@ class ArbolDecisionResponse(BaseModel):
     diagnostico_texto: str
     probabilidad_riesgo: float
     nivel_riesgo: Literal["Bajo", "Medio", "Alto"]
+
+
+# =========================================
+# K-MEANS
+# ==========================================
+
+class ClusterRequest(BaseModel):
+    k_clusters: int = Field(ge=2, le=10)
+    max_iteraciones: int = Field(gt=5, le=500)
+    datos: List[List[float]]
+
+
+class ClusterResponse(BaseModel):
+    estado: Literal["exitoso"]
+    k_utilizado: int
+    num_muestras: int
+    centroides_finales: List[List[float]]
+    etiquetas_asignadas: List[int]
+    inercia_wcss: float
