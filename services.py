@@ -3,6 +3,9 @@ import string
 from pathlib import Path
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
 from sklearn.cluster import KMeans
 import numpy as np
 from fastapi import HTTPException
@@ -356,3 +359,124 @@ def ejecutar_algoritmo_genetico(
     }
 
 
+# ===============================================================
+# ALGORITMO ARBOL DE DECISION:
+# ===============================================================
+
+# Configuracion del modelo
+SEED = 10
+
+# Ubicacion del archivo Excel
+RUTA_DATASET = Path(__file__).resolve().parent / "dataset_cardiaco_simulado.xlsx"
+
+# Columnas utilizadas para las predicciones
+CARACTERISTICAS = [
+    "Edad",
+    "PresionSistolica",
+    "Colesterol",
+    "FrecuenciaMax",
+    "AnginaEjercicio"
+]
+
+# Cargar y preparar los datos
+def entrenar_modelo_arbol():
+    """Carga los datos y entrena el arbol de decision."""
+
+    df_cardio = pd.read_excel(RUTA_DATASET)
+
+    X = df_cardio[CARACTERISTICAS]
+    y = df_cardio["DiagnosticoCardiopatia"]
+
+    # Dividir datos: 80% entrenamiento y 20% pruebas
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        stratify=y,
+        random_state=SEED
+    )
+
+    # Crear clasificador utilizando entropia
+    clasificador = DecisionTreeClassifier(
+        criterion="entropy",
+        random_state=SEED
+    )
+
+    # Entrenar modelo
+    clasificador.fit(X_train, y_train)
+
+    # Evaluar exactitud
+    predicciones = clasificador.predict(X_test)
+    accuracy = accuracy_score(y_test, predicciones)
+
+    return clasificador, accuracy
+
+
+# Entrenar el modelo al cargar el servicio
+modelo_arbol, exactitud_arbol = entrenar_modelo_arbol()
+
+
+# Funcion para evaluar un paciente
+def evaluar_riesgo_cardiaco(
+    edad,
+    presion_sistolica,
+    colesterol,
+    frecuencia_max,
+    angina_ejercicio
+):
+    """Predice la clase y probabilidad de riesgo de un paciente."""
+
+    datos_paciente = pd.DataFrame(
+        [[
+            edad,
+            presion_sistolica,
+            colesterol,
+            frecuencia_max,
+            angina_ejercicio
+        ]],
+        columns=CARACTERISTICAS
+    )
+
+    # Obtener clase predicha
+    clase_predicha = int(modelo_arbol.predict(datos_paciente)[0])
+
+    # Obtener probabilidad de cardiopatia (clase 1)
+    probabilidades = modelo_arbol.predict_proba(datos_paciente)[0]
+    indice_cardiopatia = list(modelo_arbol.classes_).index(1)
+
+    probabilidad_riesgo = float(probabilidades[indice_cardiopatia])
+
+    # Determinar nivel de riesgo
+    if probabilidad_riesgo < 0.35:
+        nivel_riesgo = "Bajo"
+    elif probabilidad_riesgo < 0.65:
+        nivel_riesgo = "Medio"
+    else:
+        nivel_riesgo = "Alto"
+
+    # Generar diagnostico textual
+    if clase_predicha == 1:
+        diagnostico_texto = (
+            "El modelo identifica caracteristicas asociadas "
+            "con cardiopatia."
+        )
+    else:
+        diagnostico_texto = (
+            "El modelo no identifica caracteristicas asociadas "
+            "con cardiopatia."
+        )
+
+    return {
+        "estado": "exitoso",
+        "paciente_evaluado": {
+            "edad": edad,
+            "presion_sistolica": presion_sistolica,
+            "colesterol": colesterol,
+            "frecuencia_max": frecuencia_max,
+            "angina_ejercicio": angina_ejercicio
+        },
+        "clase_predicha": clase_predicha,
+        "diagnostico_texto": diagnostico_texto,
+        "probabilidad_riesgo": round(probabilidad_riesgo, 4),
+        "nivel_riesgo": nivel_riesgo
+    }
