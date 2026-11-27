@@ -2,9 +2,11 @@
 from fastapi import FastAPI
 from models import (
     GeneticoRequest,
-    GeneticoResponse
+    GeneticoResponse,
+    ArbolDecisionRequest,
+    ArbolDecisionResponse
 )
-from services import ejecutar_algoritmo_genetico
+from services import ejecutar_algoritmo_genetico, evaluar_riesgo_cardiaco
 
 app = FastAPI(
     title="API RESTful de Fundamentos de Inteligencia Artificial",
@@ -30,4 +32,17 @@ def genetic_algorithm(parametro: GeneticoRequest):
         max_generaciones=parametro.max_generaciones,
         prob_cruce=parametro.prob_cruce,
         prob_mutacion=parametro.prob_mutacion
+    )
+
+
+#Arbol de decision:
+@app.post("/arbol_decision", response_model=ArbolDecisionResponse)
+def decision_tree_algoritmo(parametro: ArbolDecisionRequest):
+
+    return evaluar_riesgo_cardiaco(
+        edad=parametro.edad,
+        presion_sistolica=parametro.presion_sistolica,
+        colesterol=parametro.colesterol,
+        frecuencia_max=parametro.frecuencia_max,
+        angina_ejercicio=parametro.angina_ejercicio
     )
