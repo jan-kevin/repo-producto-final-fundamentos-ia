@@ -24,3 +24,31 @@ class GeneticoResponse(BaseModel):
     generaciones_ejecutadas: int
     convergencia: bool
     historial_fitness_max: List[int]
+
+# ==========================================
+# ARBOL DE DECISIO
+# ==========================================
+
+class ArbolDecisionRequest(BaseModel):
+    edad: int = Field(ge=18, le=100)
+    presion_sistolica: int = Field(ge=80, le=220)
+    colesterol: int = Field(ge=100, le=500)
+    frecuencia_max: int = Field(ge=60, le=220)
+    angina_ejercicio: int = Field(ge=0, le=1)
+
+
+class PacienteEvaluado(BaseModel):
+    edad: int
+    presion_sistolica: int
+    colesterol: int
+    frecuencia_max: int
+    angina_ejercicio: int
+
+
+class ArbolDecisionResponse(BaseModel):
+    estado: Literal["exitoso"]
+    paciente_evaluado: PacienteEvaluado
+    clase_predicha: int
+    diagnostico_texto: str
+    probabilidad_riesgo: float
+    nivel_riesgo: Literal["Bajo", "Medio", "Alto"]
